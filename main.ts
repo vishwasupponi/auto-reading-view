@@ -168,11 +168,7 @@ class AutoReadingSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('General')
-			.setHeading();
-
-		// Non-target page mode setting
+		// Non-target page mode setting (Start directly with setting, no redundant top header)
 		new Setting(containerEl)
 			.setName('Mode for Other (Non-Target) Pages')
 			.setDesc('Choose the default view mode for all other notes in your vault:')
@@ -193,6 +189,39 @@ class AutoReadingSettingTab extends PluginSettingTab {
 			.setHeading();
 
 		let inputComponent: TextComponent;
+		const pageListContainer = containerEl.createDiv();
+
+		const renderPageList = () => {
+			pageListContainer.empty();
+
+			new Setting(pageListContainer)
+				.setName('Configured Reading Mode Pages')
+				.setHeading();
+
+			if (this.plugin.settings.targetPages.length === 0) {
+				pageListContainer.createEl('p', {
+					text: 'No specific Reading Mode pages configured. All notes will open in your default Live Preview mode.',
+					cls: 'setting-item-description'
+				});
+				return;
+			}
+
+			for (let i = 0; i < this.plugin.settings.targetPages.length; i++) {
+				const pagePath = this.plugin.settings.targetPages[i];
+				new Setting(pageListContainer)
+					.setName(pagePath)
+					.addButton((button) =>
+						button
+							.setButtonText('Remove')
+							.setDestructive()
+							.onClick(async () => {
+								this.plugin.settings.targetPages.splice(i, 1);
+								await this.plugin.saveSettings();
+								renderPageList();
+							})
+					);
+			}
+		};
 
 		new Setting(containerEl)
 			.setName('Add a Reading Mode Page')
@@ -211,37 +240,12 @@ class AutoReadingSettingTab extends PluginSettingTab {
 						if (value && !this.plugin.settings.targetPages.includes(value)) {
 							this.plugin.settings.targetPages.push(value);
 							await this.plugin.saveSettings();
-							this.display();
+							inputComponent.setValue('');
+							renderPageList();
 						}
 					})
 			);
 
-		new Setting(containerEl)
-			.setName('Configured Reading Mode Pages')
-			.setHeading();
-
-		if (this.plugin.settings.targetPages.length === 0) {
-			containerEl.createEl('p', {
-				text: 'No specific Reading Mode pages configured. All notes will open in your default Live Preview mode.',
-				cls: 'setting-item-description'
-			});
-			return;
-		}
-
-		for (let i = 0; i < this.plugin.settings.targetPages.length; i++) {
-			const pagePath = this.plugin.settings.targetPages[i];
-			new Setting(containerEl)
-				.setName(pagePath)
-				.addButton((button) =>
-					button
-						.setButtonText('Remove')
-						.setDestructive()
-						.onClick(async () => {
-							this.plugin.settings.targetPages.splice(i, 1);
-							await this.plugin.saveSettings();
-							this.display();
-						})
-				);
-		}
+		renderPageList();
 	}
 }
