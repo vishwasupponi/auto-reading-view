@@ -187,24 +187,24 @@ class AutoReadingSettingTab extends PluginSettingTab {
 				addItem: {
 					name: 'Add page',
 					action: () => {
-						new PageSuggestModal(this.app, async (selectedFile) => {
+						new PageSuggestModal(this.app, (selectedFile) => {
 							if (!this.plugin.settings.targetPages.includes(selectedFile.path)) {
 								this.plugin.settings.targetPages.push(selectedFile.path);
-								await this.plugin.saveSettings();
+								void this.plugin.saveSettings();
 								this.update();
 							}
 						}).open();
 					}
 				},
-				onDelete: async (idx: number) => {
+				onDelete: (idx: number) => {
 					this.plugin.settings.targetPages.splice(idx, 1);
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.update();
 				},
-				onReorder: async (oldIndex: number, newIndex: number) => {
+				onReorder: (oldIndex: number, newIndex: number) => {
 					const [moved] = this.plugin.settings.targetPages.splice(oldIndex, 1);
 					this.plugin.settings.targetPages.splice(newIndex, 0, moved);
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				},
 				items: this.plugin.settings.targetPages.map((path) => ({
 					name: path,
