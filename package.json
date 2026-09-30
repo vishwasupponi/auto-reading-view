@@ -1,6 +1,6 @@
 {
   "name": "obsidian-auto-reading-view",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Automatically opens specified notes in Reading View while letting you choose your preferred default view mode for all other notes.",
   "main": "main.js",
   "author": "Vishwas Upponi",
