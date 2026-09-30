@@ -2,7 +2,7 @@
   "id": "auto-reading-mode",
   "name": "Auto Reading Mode",
   "version": "1.0.0",
-  "minAppVersion": "1.5.0",
+  "minAppVersion": "1.13.0",
   "description": "Automatically opens specified notes in Reading Mode while letting you choose your preferred default view mode for all other notes.",
   "author": "Vishwas Upponi",
   "authorUrl": "https://github.com/vishwasupponi",

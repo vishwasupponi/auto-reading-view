@@ -169,7 +169,7 @@ class AutoReadingSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Auto Reading Mode Settings')
+			.setName('General')
 			.setHeading();
 
 		// Non-target page mode setting
