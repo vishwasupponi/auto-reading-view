@@ -1,4 +1,4 @@
-# Auto Reading View (Obsidian Plugin)
+# Auto Reading View
 
 An Obsidian plugin that automatically opens specified notes in **Reading View**, while giving you full control over the default view mode for all other notes in your vault.
 
@@ -23,11 +23,11 @@ An Obsidian plugin that automatically opens specified notes in **Reading View**,
 
 ## ⚙️ Settings
 
-- **Mode for Other (Non-Target) Pages**:
+- **Mode for Other Pages**:
   - *Live Preview (Default)*: Ensures standard notes open in Live Preview editing mode.
   - *Source Mode*: Opens other notes in raw markdown source mode.
   - *Do Not Change*: Leaves the active tab mode untouched.
-- **Target Reading Mode Pages**:
+- **Target Pages**:
   - Search and add specific note names or paths that should open in Reading View.
 
 ## 📄 License

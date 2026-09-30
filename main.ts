@@ -74,7 +74,7 @@ export default class AutoReadingModePlugin extends Plugin {
 
 		const isTarget = this.isFileTarget(file);
 
-		window.setTimeout(() => {
+		window.setTimeout(async () => {
 			const activeLeaf = this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (!activeLeaf || activeLeaf.file?.path !== file.path) return;
 
@@ -84,7 +84,7 @@ export default class AutoReadingModePlugin extends Plugin {
 			if (isTarget) {
 				// Target page -> Force Reading Mode
 				if (viewState.state.mode !== 'preview') {
-					activeLeaf.leaf.setViewState({
+					await activeLeaf.leaf.setViewState({
 						...viewState,
 						state: { ...viewState.state, mode: 'preview' }
 					});
@@ -94,14 +94,14 @@ export default class AutoReadingModePlugin extends Plugin {
 				const nonTargetMode = this.settings.nonTargetMode || 'live-preview';
 				if (nonTargetMode === 'live-preview') {
 					if (viewState.state.mode !== 'source' || viewState.state.source === true) {
-						activeLeaf.leaf.setViewState({
+						await activeLeaf.leaf.setViewState({
 							...viewState,
 							state: { ...viewState.state, mode: 'source', source: false }
 						});
 					}
 				} else if (nonTargetMode === 'source') {
 					if (viewState.state.mode !== 'source' || viewState.state.source !== true) {
-						activeLeaf.leaf.setViewState({
+						await activeLeaf.leaf.setViewState({
 							...viewState,
 							state: { ...viewState.state, mode: 'source', source: true }
 						});
@@ -168,9 +168,9 @@ class AutoReadingSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// Non-target page mode setting (Start directly with setting, no redundant top header)
+		// Non-target page mode setting
 		new Setting(containerEl)
-			.setName('Mode for Other (Non-Target) Pages')
+			.setName('Mode for Other Pages')
 			.setDesc('Choose the default view mode for all other notes in your vault:')
 			.addDropdown((dropdown) =>
 				dropdown
@@ -185,7 +185,7 @@ class AutoReadingSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Target Reading Mode Pages')
+			.setName('Target Pages')
 			.setHeading();
 
 		let inputComponent: TextComponent;
@@ -195,12 +195,12 @@ class AutoReadingSettingTab extends PluginSettingTab {
 			pageListContainer.empty();
 
 			new Setting(pageListContainer)
-				.setName('Configured Reading Mode Pages')
+				.setName('Configured Pages')
 				.setHeading();
 
 			if (this.plugin.settings.targetPages.length === 0) {
 				pageListContainer.createEl('p', {
-					text: 'No specific Reading Mode pages configured. All notes will open in your default Live Preview mode.',
+					text: 'No specific Reading View pages configured. All notes will open in your default Live Preview mode.',
 					cls: 'setting-item-description'
 				});
 				return;
@@ -224,7 +224,7 @@ class AutoReadingSettingTab extends PluginSettingTab {
 		};
 
 		new Setting(containerEl)
-			.setName('Add a Reading Mode Page')
+			.setName('Add Page')
 			.setDesc('Type a note name or path from your vault to see autocompletion recommendations:')
 			.addText((text) => {
 				inputComponent = text;
