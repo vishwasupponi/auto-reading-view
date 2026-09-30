@@ -1,0 +1,15 @@
+{
+  "name": "obsidian-auto-reading-mode",
+  "version": "1.0.0",
+  "description": "Automatically opens specified notes in Reading Mode while letting you choose your preferred default view mode for all other notes.",
+  "main": "main.js",
+  "author": "Vishwas Upponi",
+  "scripts": {
+    "build": "esbuild main.ts --bundle --external:obsidian --format=cjs --target=es2018 --outfile=main.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "obsidian": "latest",
+    "typescript": "^5.0.0"
+  }
+}
