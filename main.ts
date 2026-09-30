@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile, MarkdownView, AbstractInputSuggest, TextComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, TFile, TFolder, MarkdownView, AbstractInputSuggest, TextComponent } from 'obsidian';
 
 interface AutoReadingSettings {
 	targetPages: string[];
@@ -134,15 +134,25 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
 
 	getSuggestions(query: string): TFile[] {
 		const lower = query.toLowerCase().trim();
-		const files = this.app.vault.getMarkdownFiles();
-		if (!lower) return files.slice(0, 10);
-		return files
-			.filter(
-				(file) =>
-					file.path.toLowerCase().includes(lower) ||
-					file.basename.toLowerCase().includes(lower)
-			)
-			.slice(0, 15);
+		const files: TFile[] = [];
+		const collectFiles = (folder: TFolder) => {
+			for (const child of folder.children) {
+				if (files.length >= 15) return;
+				if (child instanceof TFile && child.extension === 'md') {
+					if (
+						!lower ||
+						child.path.toLowerCase().includes(lower) ||
+						child.basename.toLowerCase().includes(lower)
+					) {
+						files.push(child);
+					}
+				} else if (child instanceof TFolder) {
+					collectFiles(child);
+				}
+			}
+		};
+		collectFiles(this.app.vault.getRoot());
+		return files;
 	}
 
 	renderSuggestion(file: TFile, el: HTMLElement): void {
@@ -162,10 +172,6 @@ class AutoReadingSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: AutoReadingModePlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-	}
-
-	getSettingDefinitions(): unknown[] {
-		return [];
 	}
 
 	display(): void {
@@ -217,7 +223,6 @@ class AutoReadingSettingTab extends PluginSettingTab {
 					.addButton((button) =>
 						button
 							.setButtonText('Remove')
-							.setDestructive()
 							.onClick(async () => {
 								this.plugin.settings.targetPages.splice(i, 1);
 								await this.plugin.saveSettings();
