@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile, TFolder, MarkdownView, AbstractInputSuggest, TextComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, TFile, TFolder, MarkdownView, FuzzySuggestModal, SettingDefinitionItem } from 'obsidian';
 
 interface AutoReadingSettings {
 	targetPages: string[];
@@ -124,28 +124,21 @@ export default class AutoReadingModePlugin extends Plugin {
 	}
 }
 
-class FileSuggest extends AbstractInputSuggest<TFile> {
-	private textComponent: TextComponent;
+class PageSuggestModal extends FuzzySuggestModal<TFile> {
+	private onChoose: (file: TFile) => void;
 
-	constructor(app: App, textComponent: TextComponent) {
-		super(app, textComponent.inputEl);
-		this.textComponent = textComponent;
+	constructor(app: App, onChoose: (file: TFile) => void) {
+		super(app);
+		this.onChoose = onChoose;
+		this.setPlaceholder('Type note name to select...');
 	}
 
-	getSuggestions(query: string): TFile[] {
-		const lower = query.toLowerCase().trim();
+	getItems(): TFile[] {
 		const files: TFile[] = [];
 		const collectFiles = (folder: TFolder) => {
 			for (const child of folder.children) {
-				if (files.length >= 15) return;
 				if (child instanceof TFile && child.extension === 'md') {
-					if (
-						!lower ||
-						child.path.toLowerCase().includes(lower) ||
-						child.basename.toLowerCase().includes(lower)
-					) {
-						files.push(child);
-					}
+					files.push(child);
 				} else if (child instanceof TFolder) {
 					collectFiles(child);
 				}
@@ -155,14 +148,12 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
 		return files;
 	}
 
-	renderSuggestion(file: TFile, el: HTMLElement): void {
-		el.setText(file.path);
+	getItemText(file: TFile): string {
+		return file.path;
 	}
 
-	selectSuggestion(file: TFile): void {
-		this.textComponent.setValue(file.path);
-		this.textComponent.inputEl.dispatchEvent(new Event('input'));
-		this.close();
+	onChooseItem(file: TFile): void {
+		this.onChoose(file);
 	}
 }
 
@@ -174,87 +165,52 @@ class AutoReadingSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-
-		// Non-target page mode setting
-		new Setting(containerEl)
-			.setName('Mode for Other Pages')
-			.setDesc('Choose the default view mode for all other notes in your vault:')
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('live-preview', 'Live Preview (Default)')
-					.addOption('source', 'Source Mode (Raw Markdown)')
-					.addOption('none', 'Do Not Change (Leave Tab Mode As-Is)')
-					.setValue(this.plugin.settings.nonTargetMode || 'live-preview')
-					.onChange(async (value: 'live-preview' | 'source' | 'none') => {
-						this.plugin.settings.nonTargetMode = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Target Pages')
-			.setHeading();
-
-		let inputComponent: TextComponent;
-		const pageListContainer = containerEl.createDiv();
-
-		const renderPageList = () => {
-			pageListContainer.empty();
-
-			new Setting(pageListContainer)
-				.setName('Configured Pages')
-				.setHeading();
-
-			if (this.plugin.settings.targetPages.length === 0) {
-				pageListContainer.createEl('p', {
-					text: 'No specific Reading View pages configured. All notes will open in your default Live Preview mode.',
-					cls: 'setting-item-description'
-				});
-				return;
-			}
-
-			for (let i = 0; i < this.plugin.settings.targetPages.length; i++) {
-				const pagePath = this.plugin.settings.targetPages[i];
-				new Setting(pageListContainer)
-					.setName(pagePath)
-					.addButton((button) =>
-						button
-							.setButtonText('Remove')
-							.onClick(async () => {
-								this.plugin.settings.targetPages.splice(i, 1);
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: 'Default view mode for other notes',
+				desc: 'Choose the default view mode for all other notes in your vault.',
+				control: {
+					type: 'dropdown',
+					key: 'nonTargetMode',
+					options: {
+						'live-preview': 'Live preview (default)',
+						'source': 'Source mode (raw markdown)',
+						'none': 'Do not change (leave tab mode as-is)'
+					}
+				}
+			},
+			{
+				type: 'list',
+				heading: 'Target pages',
+				emptyState: 'No specific reading view pages configured. All notes will open in your default live preview mode.',
+				addItem: {
+					name: 'Add page',
+					action: () => {
+						new PageSuggestModal(this.app, async (selectedFile) => {
+							if (!this.plugin.settings.targetPages.includes(selectedFile.path)) {
+								this.plugin.settings.targetPages.push(selectedFile.path);
 								await this.plugin.saveSettings();
-								renderPageList();
-							})
-					);
+								this.update();
+							}
+						}).open();
+					}
+				},
+				onDelete: async (idx: number) => {
+					this.plugin.settings.targetPages.splice(idx, 1);
+					await this.plugin.saveSettings();
+					this.update();
+				},
+				onReorder: async (oldIndex: number, newIndex: number) => {
+					const [moved] = this.plugin.settings.targetPages.splice(oldIndex, 1);
+					this.plugin.settings.targetPages.splice(newIndex, 0, moved);
+					await this.plugin.saveSettings();
+				},
+				items: this.plugin.settings.targetPages.map((path) => ({
+					name: path,
+					searchable: false
+				}))
 			}
-		};
-
-		new Setting(containerEl)
-			.setName('Add Page')
-			.setDesc('Type a note name or path from your vault to see autocompletion recommendations:')
-			.addText((text) => {
-				inputComponent = text;
-				text.setPlaceholder('Start typing note name...');
-				new FileSuggest(this.app, text);
-			})
-			.addButton((button) =>
-				button
-					.setButtonText('Add Page')
-					.setCta()
-					.onClick(async () => {
-						const value = inputComponent.getValue().trim();
-						if (value && !this.plugin.settings.targetPages.includes(value)) {
-							this.plugin.settings.targetPages.push(value);
-							await this.plugin.saveSettings();
-							inputComponent.setValue('');
-							renderPageList();
-						}
-					})
-			);
-
-		renderPageList();
+		];
 	}
 }
