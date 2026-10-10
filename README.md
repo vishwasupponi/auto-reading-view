@@ -1,5 +1,8 @@
 # Auto Reading View
 
+> [!NOTE]
+> **Safe & Non-Destructive**: This plugin operates strictly at the UI view level. It **never modifies, edits, alters, or writes to any files or notes** in your vault.
+
 An Obsidian plugin that automatically opens specified notes in **Reading View**, while giving you full control over the default view mode for all other notes in your vault.
 
 ## ✨ Features
